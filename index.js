@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events, Collection, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Events, Collection, EmbedBuilder, MessageFlags } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
@@ -57,12 +57,20 @@ client.on(Events.InteractionCreate, async interaction => {
   } catch (error) {
     console.error(`Error executing command ${interaction.commandName}:`, error);
     
-    const errorMessage = { content: 'An error occurred while executing the command!', ephemeral: true };
-    
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorMessage);
-    } else {
-      await interaction.reply(errorMessage);
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ 
+          content: 'An error occurred while executing the command!', 
+          flags: MessageFlags.Ephemeral 
+        });
+      } else {
+        await interaction.reply({ 
+          content: 'An error occurred while executing the command!', 
+          flags: MessageFlags.Ephemeral 
+        });
+      }
+    } catch (replyError) {
+      console.error('Failed to send error message:', replyError);
     }
   }
 });
