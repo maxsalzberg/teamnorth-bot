@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events, Collection, EmbedBuilder, MessageFlags } from 'discord.js';
+import { Client, GatewayIntentBits, Events, Collection, MessageFlags } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
@@ -36,6 +36,26 @@ try {
   }
 } catch (error) {
   console.log('Commands folder not found, create it to add commands');
+}
+
+const eventsPath = join(__dirname, 'events');
+try {
+  const eventFiles = readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+  
+  for (const file of eventFiles) {
+    const filePath = join(eventsPath, file);
+    const fileUrl = pathToFileURL(filePath).href;
+    const { default: event } = await import(fileUrl);
+    
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute(...args));
+    } else {
+      client.on(event.name, (...args) => event.execute(...args));
+    }
+    console.log(`Event loaded: ${event.name}`);
+  }
+} catch (error) {
+  console.log('Events folder not found, create it to add events');
 }
 
 client.once(Events.ClientReady, (c) => {
@@ -77,31 +97,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on(Events.Error, error => {
   console.error('Discord client error:', error);
-});
-
-client.on(Events.GuildMemberRemove, async (member) => {
-  const logChannelId = process.env.LOG_CHANNEL_ID;
-  
-  if (!logChannelId) {
-    console.log('LOG_CHANNEL_ID not set, skipping member leave log');
-    return;
-  }
-  
-  const logChannel = await member.guild.channels.fetch(logChannelId).catch(() => null);
-  
-  if (!logChannel) {
-    console.error(`Log channel with ID ${logChannelId} not found`);
-    return;
-  }
-  
-  const joinedAt = member.joinedAt;
-  const joinedDate = joinedAt ? `<t:${Math.floor(joinedAt.getTime() / 1000)}:F>` : 'Unknown';
-  
-  const embed = new EmbedBuilder()
-    .setDescription(`User left ${member.user} (${member.user.tag})\nJoined: ${joinedDate}`)
-    .setTimestamp();
-  
-  await logChannel.send({ embeds: [embed] });
 });
 
 const token = process.env.DISCORD_TOKEN;
