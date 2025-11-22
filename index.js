@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events, Collection, MessageFlags } from 'discord.js';
+import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
@@ -81,12 +81,12 @@ client.on(Events.InteractionCreate, async interaction => {
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({ 
           content: 'An error occurred while executing the command!', 
-          flags: MessageFlags.Ephemeral 
+          ephemeral: true 
         });
       } else {
         await interaction.reply({ 
           content: 'An error occurred while executing the command!', 
-          flags: MessageFlags.Ephemeral 
+          ephemeral: true 
         });
       }
     } catch (replyError) {

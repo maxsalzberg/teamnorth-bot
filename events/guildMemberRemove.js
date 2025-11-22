@@ -1,4 +1,4 @@
-import { Events, EmbedBuilder } from 'discord.js';
+import { Events, EmbedBuilder, Colors } from 'discord.js';
 
 export default {
   name: Events.GuildMemberRemove,
@@ -10,52 +10,40 @@ export default {
       return;
     }
     
-    const logChannel = await member.guild.channels.fetch(logChannelId).catch(() => null);
-    
-    if (!logChannel) {
-      console.error(`Log channel with ID ${logChannelId} not found`);
-      return;
-    }
-    
-    let actionType = 'left';
-    let actionText = 'User left';
-    
     try {
-      const auditLogs = await member.guild.fetchAuditLogs({
-        limit: 1,
-        type: 20
-      });
+      const logChannel = await member.guild.channels.fetch(logChannelId);
       
-      const kickLog = auditLogs.entries.first();
-      if (kickLog && kickLog.target.id === member.user.id && Date.now() - kickLog.createdTimestamp < 5000) {
-        actionType = 'kicked';
-        actionText = 'User kicked';
+      if (!logChannel) {
+        console.error(`Log channel with ID ${logChannelId} not found`);
+        return;
       }
-    } catch (error) {
-    }
-    
-    try {
-      const banLogs = await member.guild.fetchAuditLogs({
-        limit: 1,
-        type: 22
-      });
       
-      const banLog = banLogs.entries.first();
-      if (banLog && banLog.target.id === member.user.id && Date.now() - banLog.createdTimestamp < 5000) {
-        actionType = 'banned';
-        actionText = 'User banned';
+      if (!logChannel.isTextBased()) {
+        console.error(`Channel ${logChannelId} is not a text channel`);
+        return;
       }
+      
+      const joinedAt = member.joinedAt;
+      const joinedDate = joinedAt ? `<t:${Math.floor(joinedAt.getTime() / 1000)}:F>` : 'Unknown';
+      const timeOnServer = joinedAt 
+        ? `<t:${Math.floor(joinedAt.getTime() / 1000)}:R>`
+        : 'Unknown';
+      
+      const embed = new EmbedBuilder()
+        .setAuthor({ 
+          name: member.user.tag, 
+          iconURL: member.user.displayAvatarURL() 
+        })
+        .setDescription(`**User left** ${member.user}\n\n**Joined:** ${joinedDate}\n**Time on server:** ${timeOnServer}`)
+        .setColor(Colors.Orange)
+        .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
+        .setTimestamp()
+        .setFooter({ text: `User ID: ${member.user.id}` });
+      
+      await logChannel.send({ embeds: [embed] });
     } catch (error) {
+      console.error('Error in guildMemberRemove event:', error);
     }
-    
-    const joinedAt = member.joinedAt;
-    const joinedDate = joinedAt ? `<t:${Math.floor(joinedAt.getTime() / 1000)}:F>` : 'Unknown';
-    
-    const embed = new EmbedBuilder()
-      .setDescription(`${actionText} ${member.user} (${member.user.tag})\nJoined: ${joinedDate}`)
-      .setTimestamp();
-    
-    await logChannel.send({ embeds: [embed] });
   },
 };
 
