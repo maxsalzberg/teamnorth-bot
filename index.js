@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Events } from 'discord.js';
 import dotenv from 'dotenv';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
@@ -15,28 +15,6 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
   ],
 });
-
-client.commands = new Collection();
-
-const commandsPath = join(__dirname, 'commands');
-try {
-  const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-  
-  for (const file of commandFiles) {
-    const filePath = join(commandsPath, file);
-    const fileUrl = pathToFileURL(filePath).href;
-    const { default: command } = await import(fileUrl);
-    
-    if ('data' in command && 'execute' in command) {
-      client.commands.set(command.data.name, command);
-      console.log(`Command loaded: ${command.data.name}`);
-    } else {
-      console.log(`Command ${file} is missing required 'data' and 'execute' properties`);
-    }
-  }
-} catch (error) {
-  console.log('Commands folder not found, create it to add commands');
-}
 
 const eventsPath = join(__dirname, 'events');
 try {
@@ -55,44 +33,12 @@ try {
     console.log(`Event loaded: ${event.name}`);
   }
 } catch (error) {
-  console.log('Events folder not found, create it to add events');
+  console.error('Error loading events:', error);
+  process.exit(1);
 }
 
 client.once(Events.ClientReady, (c) => {
   console.log(`Bot ready! Logged in as ${c.user.tag}`);
-});
-
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) {
-    console.error(`Command ${interaction.commandName} not found.`);
-    return;
-  }
-
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(`Error executing command ${interaction.commandName}:`, error);
-    
-    try {
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ 
-          content: 'An error occurred while executing the command!', 
-          ephemeral: true 
-        });
-      } else {
-        await interaction.reply({ 
-          content: 'An error occurred while executing the command!', 
-          ephemeral: true 
-        });
-      }
-    } catch (replyError) {
-      console.error('Failed to send error message:', replyError);
-    }
-  }
 });
 
 client.on(Events.Error, error => {
