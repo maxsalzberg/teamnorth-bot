@@ -83,7 +83,7 @@ async function sendReminder(client, userId, guildId, assignedAt) {
     const userMention = `<@${userId}>`;
 
     await channel.send(
-      `Прошло 7 дней с момента выдачи роли ${roleMention} игроку ${userMention}. (выдана: <t:${assignedTimestamp}:F>)`
+      `Прошло 7 дней с момента выдачи роли ${roleMention} игроку ${userMention}. (выдана: <t:${assignedTimestamp}:F>) <@&833031991292330004>`
     );
     await clearReminder(userId);
     console.log(`[roleReminder] Reminder sent for user ${userId}`);
